@@ -96,12 +96,6 @@ module.exports = {
 					logFileName: {
 						type: 'string',
 					},
-					consoleLogLevel: {
-						type: 'string',
-					},
-					fileLogLevel: {
-						type: 'string',
-					},
 				},
 				required: [
 					'host',
@@ -178,8 +172,20 @@ module.exports = {
 								},
 								required: ['max', 'delayMs', 'delayAfter', 'windowMs'],
 							},
+							cors: {
+								type: 'object',
+								properties: {
+									origin: {
+										anyOf: [{ type: 'string' }, { type: 'boolean' }],
+									},
+									methods: {
+										type: 'array',
+									},
+								},
+								required: ['origin'],
+							},
 						},
-						required: ['limits'],
+						required: ['limits', 'cors'],
 					},
 				},
 				required: ['enabled', 'access', 'options'],
@@ -268,11 +274,23 @@ module.exports = {
 					force: {
 						type: 'boolean',
 					},
-					defaultKey: {
+					defaultPassword: {
 						type: 'string',
 					},
 					secret: {
 						type: 'array',
+						items: {
+							properties: {
+								encryptedSecret: {
+									type: 'string',
+									format: 'encryptedSecret',
+								},
+								publicKey: {
+									type: 'string',
+									format: 'publicKey',
+								},
+							},
+						},
 					},
 					access: {
 						type: 'object',
@@ -289,16 +307,13 @@ module.exports = {
 			loading: {
 				type: 'object',
 				properties: {
-					verifyOnLoading: {
-						type: 'boolean',
-					},
 					loadPerIteration: {
 						type: 'integer',
 						minimum: 1,
 						maximum: 5000,
 					},
 				},
-				required: ['verifyOnLoading', 'loadPerIteration'],
+				required: ['loadPerIteration'],
 			},
 			ssl: {
 				type: 'object',

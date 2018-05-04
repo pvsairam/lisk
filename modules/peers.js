@@ -29,6 +29,8 @@ let self;
 const __private = {};
 let definitions;
 
+const peerDiscoveryFrequency = 30000;
+
 /**
  * Main peers methods. Initializes library with scope content.
  *
@@ -275,6 +277,13 @@ __private.updatePeerStatus = function(err, status, peer) {
 		} else {
 			library.logic.peers.remove(peer);
 		}
+	} else if (!modules.system.versionCompatible(status.version)) {
+		library.logger.debug(
+			`Peers->updatePeerStatus Incompatible version, rejecting peer: ${
+				peer.string
+			}, version: ${status.version}`
+		);
+		library.logic.peers.remove(peer);
 	} else {
 		peer.applyHeaders({
 			broadhash: status.broadhash,
@@ -713,9 +722,9 @@ Peers.prototype.networkHeight = function(options, cb) {
 		if (err) {
 			return setImmediate(cb, err, 0);
 		}
-		const peersGroupByHeight = _.groupBy(peers, 'height');
-		const popularHeights = Object.keys(peersGroupByHeight);
-		const networkHeight = Number(_.max(popularHeights));
+		const peersGroupedByHeight = _.groupBy(peers, 'height');
+		const popularHeights = Object.keys(peersGroupedByHeight).map(Number);
+		const networkHeight = _.max(popularHeights);
 
 		library.logger.debug(`Network height is: ${networkHeight}`);
 		library.logger.trace(popularHeights);
@@ -844,8 +853,12 @@ Peers.prototype.onPeersReady = function() {
 			() => setImmediate(cb)
 		);
 	}
-	// Loop in 10 sec intervals (5 sec + 5 sec connection timeout from pingPeer)
-	jobsQueue.register('peersDiscoveryAndUpdate', peersDiscoveryAndUpdate, 5000);
+	// Loop in 30 sec intervals for less new insertion after removal
+	jobsQueue.register(
+		'peersDiscoveryAndUpdate',
+		peersDiscoveryAndUpdate,
+		peerDiscoveryFrequency
+	);
 };
 
 /**
